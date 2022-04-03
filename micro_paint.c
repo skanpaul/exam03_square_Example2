@@ -3,98 +3,104 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#define ERR_END_OF_FILE 0
+#define ERR_ARG 1
+#define ERR_FILE_CRPT 2
+#define OUT_SHAPE	0
+#define IN_SHAPE	1
+#define ON_EDGE		2
 
-int W;
-int H;
-char BG;
-char **TAB;
+int width;
+int height;
+char background;
+char **map;
 
-typedef struct shape
+typedef struct s_square
 {
-    char t;
-    float x;
-    float y;
-    float w;
-    float h;
-    char c;
-} shape;
+	char type;
+	float x;
+	float y;
+	float w;
+	float h;
+	char c;
+} t_square;
 
 int msg_error(FILE *fd, int error)
 {
-    if (error == 2)
-    {
-        write(1, "Error: Operation file corrupted\n", 32);
-        if (fd)
-            fclose(fd);
-        return (1);
-    }
-    else if (error == 1)
-        write(1, "Error: argument\n", 16);
-    else
-    {
-        for (int i = 0; i < H; i++)
-        {
-            write(1, TAB[i], W);
-            write(1, "\n", 1);
-        }
-    }
-    if (fd)
-        fclose(fd);
-    return (error);
+	if (error == ERR_FILE_CRPT)
+	{
+		write(1, "Error: Operation file corrupted\n", 32);
+		if (fd)
+			fclose(fd);
+		return (1);
+	}
+	else if (error == ERR_ARG)
+		write(1, "Error: argument\n", 16);
+	else // if (error == ERR_END_OF_FILE)
+	{
+		for (int i = 0; i < height; i++)
+		{
+			write(1, map[i], width);
+			write(1, "\n", 1);
+		}
+	}
+	if (fd)
+		fclose(fd);
+	return (error);
 }
 
-float in_rectangle(float col, float line, shape *rct)
+float in_rectangle(float col, float line, t_square *s)
 {
-    if (col < rct->x || (rct->x + rct->w) < col || line < rct->y || (rct->y + rct->h) < line)
-        return 0;
-    else if (col - rct->x < 1.000 || (rct->x + rct->w) - col < 1.000 || line - rct->y < 1.000 || (rct->y + rct->h) - line < 1.000)
-        return 2;
-    return 1;
+	if (col < s->x || (s->x + s->w) < col || line < s->y || (s->y + s->h) < line)
+		return OUT_SHAPE;
+	else if (col - s->x < 1.000 || (s->x + s->w) - col < 1.000 || line - s->y < 1.000 || (s->y + s->h) - line < 1.000)
+		return ON_EDGE;
+	return IN_SHAPE;
 }
 
 int main(int argc, char **argv)
 {
-    FILE *fd;
-    shape rct;
-    int res;
-    float sqr;
-    fd = NULL;
+	FILE *fd;
+	t_square s;
+	int res;
+	float sqr;
+	fd = NULL;
 
-    if (argc != 2)
-        return (msg_error(fd, 1));
-    if ((fd = fopen(argv[1], "r")))
-    {
-        if ((res = fscanf(fd, "%d %d %c", &W, &H, &BG)) == 3)
-        {
-            if (W <= 300 && W > 0 && H <= 300 && H > 0)
-            {
-                TAB = malloc(H * sizeof(char *));
-                for (int i = 0; i < H; i++)
-                {
-                    TAB[i] = malloc(W * sizeof(char));
-                    memset(TAB[i], BG, W);
-                }
-                while (1)
-                {
-                    res = fscanf(fd, "\n%c %f %f %f %f %c", &rct.t, &rct.x, &rct.y, &rct.w, &rct.h, &rct.c);
-                    if (res == -1)
-                        return (msg_error(fd, 0));
-                    else if (res != 6 || rct.w <= 0 || rct.h <= 0 || (rct.t != 'r' && rct.t != 'R'))
-                        break;
-                    for (int line = 0; line < H; line++)
-                    {
-                        for (int col = 0; col < W; col++)
-                        {
-                            sqr = in_rectangle(col, line, &rct);
-                            if (rct.t == 'r' && sqr == 2)
-                                TAB[line][col] = rct.c;
-                            else if (rct.t == 'R' && sqr)
-                                TAB[line][col] = rct.c;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return (msg_error(fd, 2));
-} 
+	if (argc != 2)
+		return (msg_error(fd, ERR_ARG));
+	if ((fd = fopen(argv[1], "r")))
+	{
+		if ((res = fscanf(fd, "%d %d %c", &width, &height, &background)) == 3)
+		{
+			if (width <= 300 && width > 0 && height <= 300 && height > 0)
+			{
+				map = malloc(height * sizeof(char *));
+				for (int i = 0; i < height; i++)
+				{
+					map[i] = malloc(width * sizeof(char));
+					memset(map[i], background, width);
+				}
+				while (1)
+				{
+					res = fscanf(fd, "\n%c %f %f %f %f %c", &s.type, &s.x, &s.y, &s.w, &s.h, &s.c);
+					if (res == -1)
+						return (msg_error(fd, ERR_END_OF_FILE));
+					else if (res != 6 || s.w <= 0 || s.h <= 0 || (s.type != 'r' && s.type != 'R'))
+						break;
+					for (int line = 0; line < height; line++)
+					{
+						for (int col = 0; col < width; col++)
+						{
+							sqr = in_rectangle(col, line, &s);
+							if (s.type == 'r' && sqr == ON_EDGE)
+								map[line][col] = s.c;
+							else if (s.type == 'R' && sqr == IN_SHAPE)
+								map[line][col] = s.c;
+						}
+					}
+				}
+			}
+		}
+	}
+	return (msg_error(fd, ERR_FILE_CRPT));
+}
