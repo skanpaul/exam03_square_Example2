@@ -3,18 +3,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+/* ************************************************************************** */
 #define ERR_END_OF_FILE 0
 #define ERR_ARG 1
 #define ERR_FILE_CRPT 2
+/* ************************************************************************** */
 #define OUT_SHAPE	0
 #define IN_SHAPE	1
 #define ON_EDGE		2
 
+/* ************************************************************************** */
 int width;
 int height;
 char background;
 char **map;
 
+/* ************************************************************************** */
 typedef struct s_square
 {
 	char type;
@@ -25,8 +29,10 @@ typedef struct s_square
 	char c;
 } t_square;
 
+/* ************************************************************************** */
 int msg_error(FILE *fd, int error)
 {
+	//-----------------------------------------------------
 	if (error == ERR_FILE_CRPT)
 	{
 		write(1, "Error: Operation file corrupted\n", 32);
@@ -34,8 +40,10 @@ int msg_error(FILE *fd, int error)
 			fclose(fd);
 		return (1);
 	}
+	//-----------------------------------------------------
 	else if (error == ERR_ARG)
 		write(1, "Error: argument\n", 16);
+	//-----------------------------------------------------
 	else // if (error == ERR_END_OF_FILE)
 	{
 		for (int i = 0; i < height; i++)
@@ -44,11 +52,13 @@ int msg_error(FILE *fd, int error)
 			write(1, "\n", 1);
 		}
 	}
+	//-----------------------------------------------------
 	if (fd)
 		fclose(fd);
 	return (error);
 }
 
+/* ************************************************************************** */
 float in_rectangle(float col, float line, t_square *s)
 {
 	if (col < s->x || (s->x + s->w) < col || line < s->y || (s->y + s->h) < line)
@@ -58,6 +68,7 @@ float in_rectangle(float col, float line, t_square *s)
 	return IN_SHAPE;
 }
 
+/* ************************************************************************** */
 int main(int argc, char **argv)
 {
 	FILE *fd;
@@ -66,8 +77,10 @@ int main(int argc, char **argv)
 	float sqr;
 	fd = NULL;
 
+	//----------------------------------
 	if (argc != 2)
 		return (msg_error(fd, ERR_ARG));
+	//----------------------------------
 	if ((fd = fopen(argv[1], "r")))
 	{
 		if ((res = fscanf(fd, "%d %d %c", &width, &height, &background)) == 3)
@@ -80,13 +93,16 @@ int main(int argc, char **argv)
 					map[i] = malloc(width * sizeof(char));
 					memset(map[i], background, width);
 				}
+				// --------------------------------------------------------------------- LOOP-START
 				while (1)
 				{
+					// ---------------------------------------------------------------------------
 					res = fscanf(fd, "\n%c %f %f %f %f %c", &s.type, &s.x, &s.y, &s.w, &s.h, &s.c);
 					if (res == -1)
 						return (msg_error(fd, ERR_END_OF_FILE));
 					else if (res != 6 || s.w <= 0 || s.h <= 0 || (s.type != 'r' && s.type != 'R'))
 						break;
+					// ---------------------------------------------------------------------------
 					for (int line = 0; line < height; line++)
 					{
 						for (int col = 0; col < width; col++)
@@ -98,9 +114,13 @@ int main(int argc, char **argv)
 								map[line][col] = s.c;
 						}
 					}
+					// ---------------------------------------------------------------------------
 				}
+				// ----------------------------------------------------------------------- LOOP-END
 			}
 		}
 	}
 	return (msg_error(fd, ERR_FILE_CRPT));
 }
+
+/* ************************************************************************** */
