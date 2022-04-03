@@ -59,7 +59,7 @@ int msg_error(FILE *fd, int error)
 }
 
 /* ************************************************************************** */
-float in_rectangle(float col, float line, t_square *s)
+int in_rectangle(float col, float line, t_square *s)
 {
 	if (col < s->x || (s->x + s->w) < col || line < s->y || (s->y + s->h) < line)
 		return OUT_SHAPE;
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	FILE *fd;
 	t_square s;
 	int res;
-	float sqr;
+	int info_in_out_on;
 	fd = NULL;
 
 	//----------------------------------
@@ -107,10 +107,10 @@ int main(int argc, char **argv)
 					{
 						for (int col = 0; col < width; col++)
 						{
-							sqr = in_rectangle(col, line, &s);
-							if (s.type == 'r' && sqr == ON_EDGE)
+							info_in_out_on = in_rectangle(col, line, &s);
+							if (s.type == 'r' && info_in_out_on == ON_EDGE)
 								map[line][col] = s.c;
-							else if (s.type == 'R' && sqr == IN_SHAPE)
+							else if (s.type == 'R' && info_in_out_on == IN_SHAPE)
 								map[line][col] = s.c;
 						}
 					}
